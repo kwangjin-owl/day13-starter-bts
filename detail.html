@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>판매 상세</title>
+<style>
+  body { font-family: "Apple SD Gothic Neo", sans-serif; max-width: 760px; margin: 40px auto; padding: 0 16px; color: #1b1d21; }
+  h1 { font-size: 24px; margin-bottom: 8px; }
+  .meta { color: #666; font-size: 14px; margin-bottom: 24px; }
+  .detail { background: #f9f7f5; border: 1px solid #ddd; border-radius: 4px; padding: 16px; }
+  .row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e0e0e0; }
+  .row:last-child { border-bottom: none; }
+  .label { font-weight: 600; color: #666; min-width: 100px; }
+  .value { text-align: right; }
+  .value.num { font-variant-numeric: tabular-nums; }
+  a { color: #0d6d64; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .error { color: #d32f2f; padding: 16px; background: #ffebee; border-radius: 4px; }
+</style>
+</head>
+<body>
+  <h1>판매 상세</h1>
+  <p class="meta"><a href="list.html">← 목록으로 돌아가기</a></p>
+
+  <div id="content"></div>
+
+<script>
+async function load() {
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id');
+
+  if (!id) {
+    document.getElementById('content').innerHTML = '<div class="error">주문번호가 없습니다</div>';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/list?id=' + encodeURIComponent(id));
+    if (!res.ok) throw new Error('조회 실패');
+
+    const data = await res.json();
+
+    const purchased = new Date(data.purchased_at);
+    document.getElementById('content').innerHTML = `
+      <div class="detail">
+        <div class="row">
+          <span class="label">주문번호</span>
+          <span class="value">${data.id}</span>
+        </div>
+        <div class="row">
+          <span class="label">구매자</span>
+          <span class="value">${data.buyer_name}</span>
+        </div>
+        <div class="row">
+          <span class="label">상품명</span>
+          <span class="value">${data.product}</span>
+        </div>
+        <div class="row">
+          <span class="label">수량</span>
+          <span class="value num">${data.quantity}</span>
+        </div>
+        <div class="row">
+          <span class="label">단가</span>
+          <span class="value num">${data.price_per_unit.toLocaleString('ko-KR')}원</span>
+        </div>
+        <div class="row">
+          <span class="label">금액</span>
+          <span class="value num" style="font-weight: 600; font-size: 16px;">${data.total_price.toLocaleString('ko-KR')}원</span>
+        </div>
+        <div class="row">
+          <span class="label">구매 시각</span>
+          <span class="value">${purchased.toLocaleString('ko-KR')}</span>
+        </div>
+      </div>
+    `;
+  } catch (e) {
+    document.getElementById('content').innerHTML = '<div class="error">조회에 실패했습니다</div>';
+  }
+}
+load();
+</script>
+</body>
+</html>
