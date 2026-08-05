@@ -3,37 +3,51 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>판매 상세</title>
+<title>주문 상세</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: "Apple SD Gothic Neo", -apple-system, sans-serif; background: #f9f7f5; color: #1b1d21; }
 
   header { background: linear-gradient(135deg, #6c5ce7 0%, #74b9ff 100%); color: white; padding: 40px 20px; text-align: center; }
-  header h1 { font-size: 32px; }
+  header h1 { font-size: 32px; font-weight: 700; }
 
   .container { max-width: 600px; margin: 40px auto; padding: 20px; }
 
-  .back-link { display: inline-block; margin-bottom: 24px; padding: 8px 16px; background: white; border-radius: 4px; text-decoration: none; color: #6c5ce7; font-size: 14px; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .back-link { display: inline-block; margin-bottom: 24px; padding: 10px 16px; background: white; border-radius: 6px; text-decoration: none; color: #6c5ce7; font-size: 14px; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: all 0.2s; }
   .back-link:hover { box-shadow: 0 4px 12px rgba(108, 92, 231, 0.2); }
 
-  .detail { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+  .card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
 
-  .detail-header { background: linear-gradient(135deg, #e8d5f2 0%, #d4e5ff 100%); padding: 40px 20px; text-align: center; }
-  .detail-emoji { font-size: 64px; margin-bottom: 16px; }
-  .detail-product { font-size: 28px; font-weight: 700; color: #1b1d21; margin-bottom: 8px; }
-  .detail-buyer { font-size: 16px; color: #666; }
+  .card-header { background: linear-gradient(135deg, #e8d5f2 0%, #d4e5ff 100%); padding: 40px 24px; text-align: center; }
+  .card-emoji { font-size: 72px; margin-bottom: 16px; }
+  .card-product { font-size: 32px; font-weight: 700; color: #1b1d21; margin-bottom: 8px; }
+  .card-buyer { font-size: 16px; color: #666; font-weight: 500; }
 
-  .detail-body { padding: 32px 20px; }
+  .card-body { padding: 32px 24px; }
 
-  .row { display: flex; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid #f0f0f0; }
-  .row:last-child { border-bottom: none; }
+  .info-group { margin-bottom: 24px; }
+  .info-group:last-child { margin-bottom: 0; }
+  .info-group-title { font-size: 12px; color: #999; font-weight: 700; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px; }
 
-  .label { font-size: 14px; color: #999; font-weight: 500; }
-  .value { font-size: 16px; font-weight: 600; color: #1b1d21; text-align: right; }
-  .value.price { font-size: 24px; color: #6c5ce7; }
+  .info-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+  .info-group:last-child .info-row:last-child { border-bottom: none; }
+
+  .info-label { font-size: 13px; color: #666; font-weight: 500; }
+  .info-value { font-size: 15px; font-weight: 600; color: #1b1d21; text-align: right; }
+
+  .total-section { background: linear-gradient(135deg, #6c5ce7 0%, #74b9ff 100%); color: white; padding: 28px 24px; margin: -32px -24px 0 -24px; text-align: right; }
+  .total-label { font-size: 14px; opacity: 0.9; margin-bottom: 8px; }
+  .total-price { font-size: 40px; font-weight: 700; letter-spacing: -1px; }
+  .total-unit { font-size: 18px; font-weight: 600; margin-left: 4px; }
+
+  .button-group { padding: 24px; background: #f9f7f5; display: flex; gap: 12px; }
+  .btn { flex: 1; padding: 14px; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .btn-primary { background: #6c5ce7; color: white; }
+  .btn-primary:hover { background: #5f3dc4; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3); }
+  .btn-secondary { background: white; color: #6c5ce7; border: 2px solid #6c5ce7; }
+  .btn-secondary:hover { background: #f9f7f5; }
 
   .error { color: #d32f2f; padding: 20px; background: #ffebee; border-radius: 8px; text-align: center; }
-
   .loading { text-align: center; padding: 40px 20px; color: #999; }
 </style>
 </head>
@@ -71,42 +85,69 @@ async function load() {
     const data = await res.json();
     const emoji = products[data.product] || '☕';
     const purchased = new Date(data.purchased_at);
-    const purchaseDate = purchased.toLocaleDateString('ko-KR');
-    const purchaseTime = purchased.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+    const purchaseDate = purchased.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const purchaseTime = purchased.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const purchaseFull = purchased.toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 
     document.getElementById('content').innerHTML = `
-      <div class="detail">
-        <div class="detail-header">
-          <div class="detail-emoji">${emoji}</div>
-          <div class="detail-product">${data.product}</div>
-          <div class="detail-buyer">${data.buyer_name}님의 주문</div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-emoji">${emoji}</div>
+          <div class="card-product">${data.product}</div>
+          <div class="card-buyer">${data.buyer_name}</div>
         </div>
-        <div class="detail-body">
-          <div class="row">
-            <span class="label">주문번호</span>
-            <span class="value">#${data.id}</span>
+
+        <div class="card-body">
+          <div class="info-group">
+            <div class="info-group-title">주문 정보</div>
+            <div class="info-row">
+              <span class="info-label">주문번호</span>
+              <span class="info-value">#${String(data.id).padStart(4, '0')}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">구매자</span>
+              <span class="info-value">${data.buyer_name}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">상품</span>
+              <span class="info-value">${data.product}</span>
+            </div>
           </div>
-          <div class="row">
-            <span class="label">구매 날짜</span>
-            <span class="value">${purchaseDate}</span>
+
+          <div class="info-group">
+            <div class="info-group-title">수량 & 금액</div>
+            <div class="info-row">
+              <span class="info-label">수량</span>
+              <span class="info-value">${data.quantity}개</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">단가</span>
+              <span class="info-value">${data.price_per_unit.toLocaleString('ko-KR')}원</span>
+            </div>
           </div>
-          <div class="row">
-            <span class="label">구매 시각</span>
-            <span class="value">${purchaseTime}</span>
-          </div>
-          <div class="row">
-            <span class="label">수량</span>
-            <span class="value">${data.quantity}개</span>
-          </div>
-          <div class="row">
-            <span class="label">단가</span>
-            <span class="value">${data.price_per_unit.toLocaleString('ko-KR')}원</span>
-          </div>
-          <div class="row">
-            <span class="label">총액</span>
-            <span class="value price">${data.total_price.toLocaleString('ko-KR')}원</span>
+
+          <div class="info-group">
+            <div class="info-group-title">구매 시간</div>
+            <div class="info-row">
+              <span class="info-label">날짜</span>
+              <span class="info-value">${purchaseDate}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">시간</span>
+              <span class="info-value">${purchaseTime}</span>
+            </div>
           </div>
         </div>
+
+        <div class="total-section">
+          <div class="total-label">총 결제 금액</div>
+          <div class="total-price">${data.total_price.toLocaleString('ko-KR')}<span class="total-unit">원</span></div>
+        </div>
+      </div>
+
+      <div class="button-group">
+        <a href="list.html" class="btn btn-secondary" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">목록으로</a>
+        <a href="index.html" class="btn btn-primary" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">새 주문</a>
       </div>
     `;
   } catch (e) {
