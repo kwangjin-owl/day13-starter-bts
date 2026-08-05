@@ -29,10 +29,10 @@
   .info-group:last-child { margin-bottom: 0; }
   .info-group-title { font-size: 10px; color: #ccc; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
 
-  .info-row { display: grid; grid-template-columns: 80px 1fr; gap: 16px; align-items: center; padding: 8px 0; border-bottom: 1px solid #f8f8f8; }
+  .info-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f8f8f8; }
   .info-group:last-child .info-row:last-child { border-bottom: none; }
 
-  .info-label { font-size: 13px; color: #999; font-weight: 500; }
+  .info-label { font-size: 13px; color: #999; font-weight: 500; flex-shrink: 0; }
   .info-value { font-size: 14px; font-weight: 600; color: #1b1d21; text-align: right; }
 
   .total-section { background: linear-gradient(135deg, #6c5ce7 0%, #74b9ff 100%); color: white; padding: 16px 20px; margin: 0; text-align: right; border-radius: 0 0 12px 12px; }
