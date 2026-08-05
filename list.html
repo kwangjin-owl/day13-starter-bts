@@ -112,7 +112,6 @@
           <span class="stat-label">평균 금액</span>
           <span class="stat-value" id="stat-avg">0<span class="stat-unit">원</span></span>
         </div>
-        <button class="sidebar-btn" onclick="location.href='index.html'">주문하기</button>
       </div>
 
       <div class="sidebar-card">
@@ -141,8 +140,8 @@ function renderGrid() {
   // 정렬
   const sorted = [...filtered].sort((a, b) => {
     switch(currentSort) {
-      case 'latest': return new Date(b.purchased_at) - new Date(a.purchased_at);
-      case 'oldest': return new Date(a.purchased_at) - new Date(b.purchased_at);
+      case 'latest': return new Date(a.purchased_at) - new Date(b.purchased_at) > 0 ? -1 : 1;
+      case 'oldest': return new Date(a.purchased_at) - new Date(b.purchased_at) > 0 ? 1 : -1;
       case 'price-high': return b.total_price - a.total_price;
       case 'price-low': return a.total_price - b.total_price;
       case 'name': return a.buyer_name.localeCompare(b.buyer_name);
