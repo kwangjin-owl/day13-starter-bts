@@ -16,10 +16,20 @@
 
   .content { flex: 1; }
 
-  .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+  .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
   .top-bar .info { font-size: 15px; color: #666; font-weight: 500; }
   .top-bar a { background: #6c5ce7; color: white; padding: 10px 18px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 600; transition: all 0.2s; }
   .top-bar a:hover { background: #5f3dc4; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3); }
+
+  .filter-controls { display: flex; gap: 16px; margin-bottom: 24px; align-items: center; flex-wrap: wrap; }
+
+  .tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; }
+  .tab { padding: 8px 16px; background: #f0f0f0; border: none; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 500; color: #666; transition: all 0.2s; white-space: nowrap; }
+  .tab:hover { background: #e0e0e0; }
+  .tab.active { background: #6c5ce7; color: white; }
+
+  .sort-select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; background: white; color: #333; cursor: pointer; font-family: inherit; }
+  .sort-select:hover { border-color: #6c5ce7; }
 
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; }
 
@@ -70,6 +80,20 @@
         <div class="info"><span id="count"></span></div>
         <a href="index.html">+ 새 주문 등록</a>
       </div>
+
+      <div class="filter-controls">
+        <div class="tabs" id="tabs">
+          <button class="tab active" data-product="all">전체</button>
+        </div>
+        <select class="sort-select" id="sort">
+          <option value="latest">최신순</option>
+          <option value="oldest">오래된순</option>
+          <option value="price-high">가격 높은순</option>
+          <option value="price-low">가격 낮은순</option>
+          <option value="name">구매자명순</option>
+        </select>
+      </div>
+
       <div class="grid" id="grid"></div>
     </div>
 
@@ -104,18 +128,33 @@ const products = {
   '우유': '🥛', '율무차': '🍵'
 };
 
-async function load() {
-  const res = await fetch('/api/list');
-  if (!res.ok) {
-    document.getElementById('count').textContent = '불러오기에 실패했습니다';
-    return;
-  }
-  const rows = await res.json();
+let allRows = [];
+let currentFilter = 'all';
+let currentSort = 'latest';
 
-  document.getElementById('count').textContent = `총 ${rows.length}건`;
+function renderGrid() {
+  // 필터링
+  let filtered = currentFilter === 'all'
+    ? allRows
+    : allRows.filter(r => r.product === currentFilter);
 
-  // 그리드 표시
-  document.getElementById('grid').innerHTML = rows.map(r => {
+  // 정렬
+  const sorted = [...filtered].sort((a, b) => {
+    switch(currentSort) {
+      case 'latest': return new Date(b.purchased_at) - new Date(a.purchased_at);
+      case 'oldest': return new Date(a.purchased_at) - new Date(b.purchased_at);
+      case 'price-high': return b.total_price - a.total_price;
+      case 'price-low': return a.total_price - b.total_price;
+      case 'name': return a.buyer_name.localeCompare(b.buyer_name);
+      default: return 0;
+    }
+  });
+
+  // 개수 업데이트
+  document.getElementById('count').textContent = `${filtered.length}건 (전체 ${allRows.length}건)`;
+
+  // 그리드 렌더링
+  document.getElementById('grid').innerHTML = sorted.map(r => {
     const emoji = products[r.product] || '☕';
     const time = new Date(r.purchased_at);
     const timeStr = time.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
@@ -135,17 +174,21 @@ async function load() {
       </div>`;
   }).join('');
 
-  // 통계 계산
-  const totalPrice = rows.reduce((sum, r) => sum + r.total_price, 0);
-  const avgPrice = rows.length > 0 ? Math.round(totalPrice / rows.length) : 0;
+  updateStats();
+}
 
-  document.getElementById('stat-count').textContent = rows.length;
+function updateStats() {
+  // 전체 통계 (필터와 무관하게 전체 기준)
+  const totalPrice = allRows.reduce((sum, r) => sum + r.total_price, 0);
+  const avgPrice = allRows.length > 0 ? Math.round(totalPrice / allRows.length) : 0;
+
+  document.getElementById('stat-count').textContent = allRows.length;
   document.getElementById('stat-total').textContent = totalPrice.toLocaleString('ko-KR');
   document.getElementById('stat-avg').textContent = avgPrice.toLocaleString('ko-KR');
 
   // 인기 상품 Top 3
   const productCounts = {};
-  rows.forEach(r => {
+  allRows.forEach(r => {
     productCounts[r.product] = (productCounts[r.product] || 0) + r.quantity;
   });
 
@@ -165,6 +208,46 @@ async function load() {
 
   document.getElementById('top-products').innerHTML = topProducts || '<div style="padding: 12px 0; color: #999;">아직 주문이 없습니다</div>';
 }
+
+async function load() {
+  const res = await fetch('/api/list');
+  if (!res.ok) {
+    document.getElementById('count').textContent = '불러오기에 실패했습니다';
+    return;
+  }
+  allRows = await res.json();
+
+  // 탭 생성
+  const productSet = new Set(allRows.map(r => r.product));
+  const tabsHtml = Array.from(productSet).map(p =>
+    `<button class="tab" data-product="${p}" onclick="filterByProduct('${p}')">${p}</button>`
+  ).join('');
+  document.getElementById('tabs').innerHTML =
+    `<button class="tab active" data-product="all" onclick="filterByProduct('all')">전체</button>${tabsHtml}`;
+
+  // 정렬 이벤트
+  document.getElementById('sort').addEventListener('change', (e) => {
+    currentSort = e.target.value;
+    renderGrid();
+  });
+
+  renderGrid();
+}
+
+function filterByProduct(product) {
+  currentFilter = product;
+
+  // 탭 활성화 업데이트
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.classList.remove('active');
+    if (tab.dataset.product === product) {
+      tab.classList.add('active');
+    }
+  });
+
+  renderGrid();
+}
+
 load();
 </script>
 </body>
